@@ -1,5 +1,7 @@
 # semanticbold.sty — Semantic Boldness for Numeric Tables (40–40–20)
 
+This project was implemented by **Elchin Hasanov** based on requirements provided by **Prof. Mingfeng Lin, Scheller College of Business, Georgia Tech**.
+
 `semanticbold` is a lightweight LaTeX package that automatically applies
 semantic boldness to numeric tables based on the **numeric value range**.
 It performs a **two-pass scan** of your table to determine where each value lies
@@ -34,9 +36,3 @@ Load it in your preamble:
 
 ```latex
 \usepackage{semanticbold}
-
-
-## Attribution
-
-This project was implemented by **Elchin Hasanov** based on requirements provided by **Prof. Mingfeng Lin, Scheller College of Business, Georgia Tech**.
-
