@@ -34,3 +34,9 @@ Load it in your preamble:
 
 ```latex
 \usepackage{semanticbold}
+
+
+## Attribution
+
+This project was implemented by **Elchin Hasanov** based on requirements provided by **Prof. Mingfeng Lin, Scheller College of Business, Georgia Tech**.
+
