@@ -1,0 +1,119 @@
+% ============================================================
+% semanticbold.sty
+% Automatic semantic boldness for numeric tables (40–40–20)
+% Author: (your name)
+% Description:
+%   Scans a table, collects all \SBnum{...} entries,
+%   finds min and max, splits numeric range into:
+%       bottom 40%  -> regular
+%       middle 40%  -> bold
+%       top 20%     -> extra-bold (overprint)
+%   Works automatically in two passes via \begin{semanticbold} ... \end{semanticbold}
+% ============================================================
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{semanticbold}[2025/01/01 Semantic boldness 40-40-20]
+
+\RequirePackage{expl3}
+\RequirePackage{xparse}
+
+\ExplSyntaxOn
+
+% -------- Data holders ----------
+\seq_new:N \g_sb_values_seq        % all numbers
+\int_new:N \g_sb_low_int           % lower threshold
+\int_new:N \g_sb_high_int          % upper threshold
+
+% scratch
+\seq_new:N \l_sb_sorted_seq
+\int_new:N \l_sb_len_int
+\int_new:N \l_sb_min_int
+\int_new:N \l_sb_max_int
+\int_new:N \l_sb_range_int
+\int_new:N \l_sb_tmp_int
+
+% -------- First pass: collect numbers ----------
+\cs_new_protected:Npn \sb_collect:n #1
+  { \seq_gput_right:Nn \g_sb_values_seq { \int_eval:n{#1} } }
+
+% -------- Compute numeric thresholds ----------
+\cs_new_protected:Npn \sb_compute:
+  {
+    \seq_set_eq:NN \l_sb_sorted_seq \g_sb_values_seq
+    \seq_sort:Nn \l_sb_sorted_seq
+      {
+        \int_compare:nNnTF {##1} > {##2}
+          { \sort_return_swapped: }
+          { \sort_return_same: }
+      }
+
+    \int_set:Nn \l_sb_len_int { \seq_count:N \l_sb_sorted_seq }
+
+    \int_compare:nNnTF { \l_sb_len_int } = { 0 }
+      {
+        \int_gzero:N \g_sb_low_int
+        \int_gzero:N \g_sb_high_int
+      }
+      {
+        \int_set:Nn \l_sb_min_int { \seq_item:Nn \l_sb_sorted_seq {1} }
+        \int_set:Nn \l_sb_max_int { \seq_item:Nn \l_sb_sorted_seq {\l_sb_len_int} }
+
+        \int_set:Nn \l_sb_range_int { \l_sb_max_int - \l_sb_min_int }
+
+        % Low = min + 2/5 range
+        % High = min + 4/5 range
+        % Integer-safe
+        \int_gset:Nn \g_sb_low_int
+          { \l_sb_min_int + 2 * \l_sb_range_int / 5 }
+        \int_gset:Nn \g_sb_high_int
+          { \l_sb_min_int + 4 * \l_sb_range_int / 5 }
+      }
+  }
+
+% -------- Extra-bold effect ----------
+\cs_new_protected:Npn \SBextrabold #1
+  {
+    \begingroup
+      \setbox0=\hbox{\textbf{#1}}%
+      \leavevmode
+      \rlap{\copy0}\kern0.08em\copy0
+    \endgroup
+  }
+
+% -------- Second pass: typeset style ----------
+\cs_new_protected:Npn \sb_typeset:n #1
+  {
+    \int_set:Nn \l_sb_tmp_int {#1}
+
+    \int_compare:nNnTF { \l_sb_tmp_int } < { \g_sb_low_int }
+      { #1 }
+      {
+        \int_compare:nNnTF { \l_sb_tmp_int } < { \g_sb_high_int }
+          { \textbf{#1} }
+          { \SBextrabold{#1} }
+      }
+  }
+
+% -------- Public macro: \SBnum ----------
+\cs_new_protected:Npn \SBnum #1 { #1 }
+
+% -------- Two-pass environment ----------
+\NewDocumentEnvironment{semanticbold}{+b}
+  {
+    \group_begin:
+      \seq_gclear:N \g_sb_values_seq
+
+      % First pass: collect
+      \cs_set_protected:Npn \SBnum ##1 { \sb_collect:n{##1} }
+      \setbox0=\vbox{#1}
+
+      % Compute thresholds
+      \sb_compute:
+
+      % Second pass: real typeset
+      \cs_set_protected:Npn \SBnum ##1 { \sb_typeset:n{##1} }
+      #1
+  }
+  { \group_end: }
+
+\ExplSyntaxOff
